@@ -1,0 +1,113 @@
+/*
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+ *
+ * Copyright (c) [2022] Payara Foundation and/or its affiliates. All rights reserved.
+ *
+ * The contents of this file are subject to the terms of either the GNU
+ * General Public License Version 2 only ("GPL") or the Common Development
+ * and Distribution License("CDDL") (collectively, the "License").  You
+ * may not use this file except in compliance with the License.  You can
+ * obtain a copy of the License at
+ * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ * When distributing the software, include this License Header Notice in each
+ * file and include the License file at glassfish/legal/LICENSE.txt.
+ *
+ * GPL Classpath Exception:
+ * The Payara Foundation designates this particular file as subject to the "Classpath"
+ * exception as provided by the Payara Foundation in the GPL Version 2 section of the License
+ * file that accompanied this code.
+ *
+ * Modifications:
+ * If applicable, add the following below the License Header, with the fields
+ * enclosed by brackets [] replaced by your own identifying information:
+ * "Portions Copyright [year] [name of copyright owner]"
+ *
+ * Contributor(s):
+ * If you wish your version of this file to be governed by only the CDDL or
+ * only the GPL Version 2, indicate your decision by adding "[Contributor]
+ * elects to include this software in this distribution under the [CDDL or GPL
+ * Version 2] license."  If you don't indicate a single choice of license, a
+ * recipient has the option to distribute your version of this file under
+ * either the CDDL, the GPL Version 2 or to extend the choice of license to
+ * its licensees as provided above.  However, if you add GPL Version 2 code
+ * and therefore, elected the GPL Version 2 license, then the option applies
+ * only if the new code is made subject to such option by the copyright
+ * holder.
+ */
+package org.glassfish.enterprise.concurrent;
+
+import jakarta.annotation.Priority;
+import jakarta.enterprise.concurrent.Asynchronous;
+import jakarta.enterprise.concurrent.ManagedExecutorService;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
+import java.util.Hashtable;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
+import javax.naming.InitialContext;
+
+/**
+ * Interceptor for @Asynchronous.
+ *
+ * @author Petr Aubrecht <aubrecht@asoftware.cz>
+ */
+@Interceptor
+@Asynchronous
+@Priority(Interceptor.Priority.PLATFORM_AFTER)
+public class AsynchronousInterceptor {
+    static final Logger log = Logger.getLogger(AsynchronousInterceptor.class.getName());
+
+    private ManagedExecutorService mes = null;
+
+    @AroundInvoke
+    public Object intercept(InvocationContext context) throws Exception {
+        Hashtable<?, ?> environment = new InitialContext().getEnvironment();
+        if (mes == null) {
+            // TODO: implement annotation parameter: executor = "java:module/env/concurrent/myExecutorRef"
+            mes = (ManagedExecutorService) new InitialContext().lookup("java:comp/DefaultManagedExecutorService");
+        }
+        log.severe("AsynchronousInterceptor.intercept");
+        AsyncRunner asyncRun = new AsyncRunner(context);
+        CompletableFuture<Object> future = mes.supplyAsync(asyncRun);
+        asyncRun.setFuture(future);
+        return future;
+    }
+
+    private class AsyncRunner implements Supplier<Object> {
+
+        private CompletableFuture<Object> future;
+        private InvocationContext context;
+
+        public AsyncRunner(InvocationContext context) {
+            this.context = context;
+        }
+
+//        public void run() {
+//            try {
+//                Object returnObject = context.proceed();
+//                future.complete(returnObject);
+//            } catch (Exception ex) {
+//                future.completeExceptionally(ex);
+//            }
+//        }
+
+        private void setFuture(CompletableFuture<Object> future) {
+            this.future = future;
+        }
+
+        @Override
+        public Object get() {
+            try {
+                return context.proceed();
+            } catch (Exception ex) {
+                future.completeExceptionally(ex);
+                return null;
+            }
+        }
+    }
+}
