@@ -45,7 +45,6 @@ import jakarta.enterprise.concurrent.ManagedExecutorService;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
 import jakarta.interceptor.InvocationContext;
-import java.util.Hashtable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
@@ -58,7 +57,7 @@ import javax.naming.InitialContext;
  */
 @Interceptor
 @Asynchronous
-@Priority(Interceptor.Priority.PLATFORM_AFTER)
+@Priority(Interceptor.Priority.PLATFORM_BEFORE + 5)
 public class AsynchronousInterceptor {
     static final Logger log = Logger.getLogger(AsynchronousInterceptor.class.getName());
 
@@ -66,15 +65,15 @@ public class AsynchronousInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {
-        Hashtable<?, ?> environment = new InitialContext().getEnvironment();
         if (mes == null) {
-            // TODO: implement annotation parameter: executor = "java:module/env/concurrent/myExecutorRef"
-            mes = (ManagedExecutorService) new InitialContext().lookup("java:comp/DefaultManagedExecutorService");
+            String executor = context.getMethod().getAnnotation(Asynchronous.class).executor();
+            mes = (ManagedExecutorService) new InitialContext().lookup(executor != null ? executor : "java:comp/DefaultManagedExecutorService");
         }
         log.severe("AsynchronousInterceptor.intercept");
         AsyncRunner asyncRun = new AsyncRunner(context);
         CompletableFuture<Object> future = mes.supplyAsync(asyncRun);
         asyncRun.setFuture(future);
+        Asynchronous.Result.setFuture(future);
         return future;
     }
 
@@ -87,15 +86,6 @@ public class AsynchronousInterceptor {
             this.context = context;
         }
 
-//        public void run() {
-//            try {
-//                Object returnObject = context.proceed();
-//                future.complete(returnObject);
-//            } catch (Exception ex) {
-//                future.completeExceptionally(ex);
-//            }
-//        }
-
         private void setFuture(CompletableFuture<Object> future) {
             this.future = future;
         }
@@ -103,8 +93,11 @@ public class AsynchronousInterceptor {
         @Override
         public Object get() {
             try {
+                Asynchronous.Result.setFuture(future); // set the future to comunicate with the original thread
                 return context.proceed();
             } catch (Exception ex) {
+                ex.printStackTrace();
+//                Asynchronous.Result.getFuture().completeExceptionally(ex);
                 future.completeExceptionally(ex);
                 return null;
             }
