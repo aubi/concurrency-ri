@@ -74,7 +74,7 @@ public class ManagedCompletableFuture<T> extends CompletableFuture<T> {
 
     @Override
     public <U> CompletableFuture<U> thenApply(Function<? super T, ? extends U> fn) {
-        return super.thenApply(fn);
+        return super.thenApply(executor.getContextService().contextualFunction(fn));
     }
 
     public static <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier, ManagedExecutorService executor) {
@@ -90,15 +90,46 @@ public class ManagedCompletableFuture<T> extends CompletableFuture<T> {
     }
 
     @Override
+    public <U> CompletableFuture<U> thenApplyAsync(Function<? super T, ? extends U> fn) {
+        return thenApplyAsync(fn, executor);
+    }
+
+    @Override
     public <U> CompletableFuture<U> thenApplyAsync(Function<? super T, ? extends U> fn, Executor executor) {
+        return super.thenApplyAsync(this.executor.getContextService().contextualFunction(fn), executor);
+    }
+
+    @Override
+    public <U, V> CompletableFuture<V> thenCombineAsync(CompletionStage<? extends U> other, BiFunction<? super T, ? super U, ? extends V> fn) {
+        return thenCombineAsync(other, executor.getContextService().contextualFunction(fn), executor);
+    }
+
+    @Override
+    public <U, V> CompletableFuture<V> thenCombineAsync(CompletionStage<? extends U> other, BiFunction<? super T, ? super U, ? extends V> fn, Executor executor) {
+        return super.thenCombineAsync(other, this.executor.getContextService().contextualFunction(fn), executor);
+    }
+
+    @Override
+    public <U> CompletableFuture<U> handleAsync(BiFunction<? super T, Throwable, ? extends U> fn) {
         // FIXME: implement correctly
-        return super.thenApplyAsync(fn, executor);
+        return super.handleAsync(executor.getContextService().contextualFunction(fn));
     }
 
     @Override
     public <U, V> CompletableFuture<V> thenCombine(CompletionStage<? extends U> other, BiFunction<? super T, ? super U, ? extends V> fn) {
         return super.thenCombine(other, executor.getContextService().contextualFunction(fn));
     }
+
+    @Override
+    public <U> CompletableFuture<U> applyToEitherAsync(CompletionStage<? extends T> other, Function<? super T, U> fn) {
+        return applyToEitherAsync(other, fn, executor);
+    }
+
+    @Override
+    public <U> CompletableFuture<U> applyToEitherAsync(CompletionStage<? extends T> other, Function<? super T, U> fn, Executor executor) {
+        return super.applyToEitherAsync(other, this.executor.getContextService().contextualFunction(fn), executor); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/OverriddenMethodBody
+    }
+
 
     public static <U> CompletableFuture<U> completedFuture(U value, ManagedExecutorService executor) {
         ManagedCompletableFuture<U> future = new ManagedCompletableFuture<>(executor);
@@ -110,15 +141,6 @@ public class ManagedCompletableFuture<T> extends CompletableFuture<T> {
         ManagedCompletableFuture<U> future = new ManagedCompletableFuture<>(executor);
         future.complete(value);
         return (CompletionStage<U>) future;
-    }
-
-    public static <T> CompletableFuture<T> copy(CompletableFuture<T> future, ManagedExecutorService executor) {
-        return future.copy();
-    }
-
-    public static <T> CompletionStage<T> copy(CompletionStage<T> stage, ManagedExecutorService executor) {
-        CompletableFuture<T> future = (CompletableFuture<T>) stage;
-        return future.copy();
     }
 
     public static <U> CompletableFuture<U> failedFuture(Throwable ex, ManagedExecutorService executor) {
