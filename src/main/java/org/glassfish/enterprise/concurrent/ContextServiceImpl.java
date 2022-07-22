@@ -14,6 +14,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  */
+// Portions Copyright [2022] [Payara Foundation and/or its affiliates]
 
 package org.glassfish.enterprise.concurrent;
 
@@ -221,7 +222,7 @@ public class ContextServiceImpl implements ContextService, Serializable {
     }
 
     private Executor getDefaultManageExecutorService() {
-        return new ManagedExecutorServiceImpl(name, null, 0, false,
+        return new ManagedExecutorServiceImpl(name, null, 0, false, false,
                 1, Integer.MAX_VALUE,
                 0, TimeUnit.SECONDS,
                 0L,
