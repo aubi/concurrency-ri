@@ -538,20 +538,6 @@ public class ManagedScheduledThreadPoolExecutor extends ScheduledThreadPoolExecu
             this.scheduledRunTime = scheduledRunTime;
         }
 
-        ManagedTriggerSingleFutureTask(AbstractManagedExecutorService executor, 
-                                 Runnable r,
-                                 long ns,
-                                 long scheduledRunTime,
-                                 TriggerControllerFuture controller) {
-            super(executor, r, null, ns);
-            this.controller = controller;
-            this.scheduledRunTime = scheduledRunTime;
-        }
-        
-        private long getDelayFromDate(Date nextRunTime) {
-            return triggerTime(nextRunTime.getTime() - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
-        }
-        
         @Override
         public boolean isPeriodic() {
             return false;
