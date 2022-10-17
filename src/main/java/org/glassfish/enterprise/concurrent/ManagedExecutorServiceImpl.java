@@ -59,10 +59,11 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
         if (useForkJoinPool) {
             executor = new ManagedForkJoinPool();
         } else {
-            executor = new ManagedThreadPoolExecutor(corePoolSize, maxPoolSize,
+            ManagedThreadPoolExecutor mtpExecutor = new ManagedThreadPoolExecutor(corePoolSize, maxPoolSize,
                     keepAliveTime, keepAliveTimeUnit, queue,
                     this.managedThreadFactory);
-            ((ManagedThreadPoolExecutor) executor).setThreadLifeTime(threadLifeTime);
+            mtpExecutor.setThreadLifeTime(threadLifeTime);
+            executor = mtpExecutor;
         }
         adapter = new ManagedExecutorServiceAdapter(this);
     }
@@ -117,7 +118,7 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
     public void execute(Runnable command) {
         ManagedFutureTask<Void> task = getNewTaskFor(command, null);
         task.submitted();
-        ((ExecutorService) executor).execute(task);
+        executor.execute(task);
     }
 
     /**
@@ -133,7 +134,7 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
 
     @Override
     protected ExecutorService getExecutor() {
-        return (ExecutorService) executor;
+        return executor;
     }
 
     @Override

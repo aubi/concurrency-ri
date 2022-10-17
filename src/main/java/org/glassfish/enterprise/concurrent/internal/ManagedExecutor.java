@@ -41,30 +41,32 @@
 package org.glassfish.enterprise.concurrent.internal;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-public interface ManagedExecutor {
-    public long getTaskCount();
+public interface ManagedExecutor extends ExecutorService {
 
-    public long getCompletedTaskCount();
+    long getTaskCount();
 
-    public int getCorePoolSize();
+    long getCompletedTaskCount();
 
-    public int getActiveCount();
+    int getCorePoolSize();
 
-    public long getKeepAliveTime(TimeUnit timeUnit);
+    int getActiveCount();
 
-    public int getLargestPoolSize();
+    long getKeepAliveTime(TimeUnit timeUnit);
 
-    public int getMaximumPoolSize();
+    int getLargestPoolSize();
 
-    public int getPoolSize();
+    int getMaximumPoolSize();
 
-    public BlockingQueue getQueue();
+    int getPoolSize();
 
-    public RejectedExecutionHandler getRejectedExecutionHandler();
+    BlockingQueue getQueue();
 
-    public ThreadFactory getThreadFactory();
+    RejectedExecutionHandler getRejectedExecutionHandler();
+
+    ThreadFactory getThreadFactory();
 }
