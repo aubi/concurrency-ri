@@ -76,9 +76,9 @@
     </mailingLists>
 
     <scm>
-        <url>https://github.com/eclipse-ee4j/concurrency-ri</url>
-        <connection>scm:git:https://github.com/eclipse-ee4j/concurrency-ri.git</connection>
-        <developerConnection>scm:git:git@github.com:eclipse-ee4j/concurrency-ri.git</developerConnection>
+        <url>https://github.com/payara/patched-src-concurrency-ri</url>
+        <connection>scm:git:https://github.com/payara/patched-src-concurrency-ri</.git</connection>
+        <developerConnection>scm:git:git@github.com:payara/patched-src-concurrency-ri</.git</developerConnection>
     </scm>
 
     <issueManagement>
