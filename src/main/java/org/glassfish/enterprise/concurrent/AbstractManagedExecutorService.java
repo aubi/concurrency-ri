@@ -181,15 +181,18 @@ extends AbstractExecutorService implements ManagedExecutorService {
             return null;
         }
         Collection<AbstractManagedThread> hungThreads = null;
-        Collection<AbstractManagedThread> allThreads = getThreads();
+        Collection<Thread> allThreads = getThreads();
         if (allThreads != null) {
             long now = System.currentTimeMillis();
-            for (AbstractManagedThread thread: allThreads) {
-                if (thread.isTaskHung(now)) {
-                    if (hungThreads == null) {
-                        hungThreads = new ArrayList<>();
+            for (Thread thread : allThreads) {
+                if (thread instanceof AbstractManagedThread managedThread) {
+                    // FIXME: solve missing isTaskHung in VirtualThread by remembering in ManagedThreadFactoryImpl the start times of threads
+                    if (managedThread.isTaskHung(now)) {
+                        if (hungThreads == null) {
+                            hungThreads = new ArrayList<>();
+                        }
+                        hungThreads.add(managedThread);
                     }
-                    hungThreads.add(thread);
                 }
             }
         }
@@ -222,7 +225,7 @@ extends AbstractExecutorService implements ManagedExecutorService {
      * @return an array of threads in this Managed[Scheduled]ExecutorService.
      *         It returns null if there is no thread.
      */
-    public Collection<AbstractManagedThread> getThreads() {
+    public Collection<Thread> getThreads() {
         return managedThreadFactory.getThreads();
     }
 

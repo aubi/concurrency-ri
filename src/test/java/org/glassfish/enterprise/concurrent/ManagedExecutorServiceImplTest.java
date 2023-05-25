@@ -259,7 +259,7 @@ public class ManagedExecutorServiceImplTest {
                 createManagedExecutor("testThreadLifeTime", 
                 1, 2, 0, 3L, 0L, false, false);
         
-        Collection<AbstractManagedThread> threads = mes.getThreads();
+        Collection<Thread> threads = mes.getThreads();
         assertNull(threads);
         
         RunnableImpl runnable = new RunnableImpl(null);
