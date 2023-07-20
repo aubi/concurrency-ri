@@ -46,7 +46,7 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
             long hungTaskThreshold,
             boolean longRunningTasks,
             boolean useForkJoinPool,
-            int corePoolSize, int maxPoolSize, long keepAliveTime, 
+            int corePoolSize, int maxPoolSize, long keepAliveTime,
             TimeUnit keepAliveTimeUnit,
             long threadLifeTime,
             ContextServiceImpl contextService,
@@ -68,6 +68,23 @@ public class ManagedExecutorServiceImpl extends AbstractManagedExecutorService {
         adapter = new ManagedExecutorServiceAdapter(this);
     }
     
+    /**
+     * constructor without useForkJoinPool parameter, default to false
+     */
+    public ManagedExecutorServiceImpl(String name,
+            ManagedThreadFactoryImpl managedThreadFactory,
+            long hungTaskThreshold,
+            boolean longRunningTasks,
+            int corePoolSize, int maxPoolSize, long keepAliveTime,
+            TimeUnit keepAliveTimeUnit,
+            long threadLifeTime,
+            ContextServiceImpl contextService,
+            RejectPolicy rejectPolicy,
+            BlockingQueue<Runnable> queue) {
+        this(name, managedThreadFactory, hungTaskThreshold, longRunningTasks, false, corePoolSize, maxPoolSize, keepAliveTime, keepAliveTimeUnit,
+                threadLifeTime, contextService, rejectPolicy, queue);
+    }
+
     public ManagedExecutorServiceImpl(String name,
             ManagedThreadFactoryImpl managedThreadFactory,
             long hungTaskThreshold,
