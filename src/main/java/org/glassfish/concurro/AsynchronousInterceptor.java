@@ -115,7 +115,6 @@ public class AsynchronousInterceptor {
     }
 
     public CompletableFuture<Object> schedule(InvocationContext context, Method method, Asynchronous asynchAnnotation) {
-        ManagedScheduledExecutorService mses = lookupMES(ManagedScheduledExecutorService.class, "java:comp/DefaultManagedScheduledExecutorService", method.getName());
         List<CronTrigger> triggers = new ArrayList<>();
         for (Schedule schedule : asynchAnnotation.runAt()) {
             // TODO schedule.skipIfLateBy()
@@ -132,15 +131,26 @@ public class AsynchronousInterceptor {
             } else {
                 trigger = new CronTrigger(schedule.cron(), zone);
             }
+            triggers.add(trigger);
             //new ManagedScheduledExecutorServiceImpl(name, managedThreadFactory, 0, validReturnType, 0, 0, TimeUnit.MILLISECONDS, 0, contextService, AbstractManagedExecutorService.RejectPolicy.RETRY_ABORT)
             //ZonedDateTime firstTime = trigger.getNextRunTime(null, ZonedDateTime.now());
         }
+        ManagedScheduledExecutorService mses = lookupMES(ManagedScheduledExecutorService.class, "java:comp/DefaultManagedScheduledExecutorService", method.getName());
         CompoundTrigger trigger = new CompoundTrigger(mses, triggers, context);
+        CompletableFuture<Object> future = mses.newIncompleteFuture();
         mses.schedule(() -> {
-            context.proceed();
+            Asynchronous.Result.setFuture(future);
+            try {
+                context.proceed();
+                //future.complete(result); return from context.proceed() == future!!!
+            } catch (Exception e) {
+                //throw new IllegalStateException("Invocation context proceed failed!", e);
+                future.completeExceptionally(e);
+            } finally {
+                Asynchronous.Result.setFuture(null);
+            }
         }, trigger);
-        //trigger.schedule();
-        return  ?  ?  ?;
+        return future;
     }
 
 }

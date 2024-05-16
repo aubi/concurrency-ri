@@ -58,12 +58,4 @@ public class CompoundTrigger implements Trigger {
         // TODO
         return false;
     }
-
-    /**
-     * Schedule execution.
-     */
-    public void schedule() {
-
-    }
-
 }
