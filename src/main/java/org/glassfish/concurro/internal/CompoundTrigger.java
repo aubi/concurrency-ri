@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2024 Payara Foundation and/or its affiliates.
  * Copyright (c) 2024 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
@@ -25,8 +26,10 @@ import java.util.Date;
 import java.util.List;
 
 /**
+ * Trigger based on a list of triggers, always plans the closes next time from
+ * all triggers.
  *
- * @author aubi
+ * @author Petr Aubrecht
  */
 public class CompoundTrigger implements Trigger {
 

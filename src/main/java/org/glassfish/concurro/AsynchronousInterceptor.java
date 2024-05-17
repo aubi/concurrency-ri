@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2022-2024 Contributors to the Eclipse Foundation
+ * Copyright (c) 2024 Payara Foundation and/or its affiliates.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0, which is available at
@@ -37,6 +38,8 @@ import java.lang.reflect.Method;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import org.glassfish.concurro.internal.AsynchronousScheduledAction;
 import org.glassfish.concurro.internal.CompoundTrigger;
 
 /**
@@ -115,6 +118,14 @@ public class AsynchronousInterceptor {
     }
 
     public CompletableFuture<Object> schedule(InvocationContext context, Method method, Asynchronous asynchAnnotation) {
+
+        // FIXME: challenge testScheduledAsynchWithInvalidJNDIName from TCK and then remove this useless block
+        // For runAt, executor is not used at all!
+        // check existence of executor
+        String executor = asynchAnnotation.executor();
+        executor = executor != null ? executor : "java:comp/DefaultManagedExecutorService"; // provide default value if there is none
+        lookupMES(ManagedExecutorService.class, executor, method.getName());
+
         List<CronTrigger> triggers = new ArrayList<>();
         for (Schedule schedule : asynchAnnotation.runAt()) {
             // TODO schedule.skipIfLateBy()
@@ -136,20 +147,11 @@ public class AsynchronousInterceptor {
             //ZonedDateTime firstTime = trigger.getNextRunTime(null, ZonedDateTime.now());
         }
         ManagedScheduledExecutorService mses = lookupMES(ManagedScheduledExecutorService.class, "java:comp/DefaultManagedScheduledExecutorService", method.getName());
-        CompoundTrigger trigger = new CompoundTrigger(mses, triggers, context);
         CompletableFuture<Object> future = mses.newIncompleteFuture();
-        mses.schedule(() -> {
-            Asynchronous.Result.setFuture(future);
-            try {
-                context.proceed();
-                //future.complete(result); return from context.proceed() == future!!!
-            } catch (Exception e) {
-                //throw new IllegalStateException("Invocation context proceed failed!", e);
-                future.completeExceptionally(e);
-            } finally {
-                Asynchronous.Result.setFuture(null);
-            }
-        }, trigger);
+        AsynchronousScheduledAction action = new AsynchronousScheduledAction(context, future);
+        CompoundTrigger trigger = new CompoundTrigger(mses, triggers, context);
+        final ScheduledFuture<?> scheduledFuture = mses.schedule(action, trigger);
+        action.setScheduledFuture(scheduledFuture);
         return future;
     }
 
